@@ -8,7 +8,7 @@ c/http_client
 *.lib
 *.a
 proxyFilter
-
+cache/
 
 *.out
 *.dll
