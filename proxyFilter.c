@@ -17,6 +17,8 @@
 char *url_blacklist[100];
 int url_blacklist_len = 0;
 int url_index = 0;
+FILE *filterFile;
+char buf[100];
 
 
 int main(int argc, char **argv)
@@ -27,35 +29,32 @@ int main(int argc, char **argv)
     int sockfd, newsockfd;
     int clilen = sizeof(cli_addr);
     struct stat st = {0};
-
-    // the first argument shows the port-no to listen on
+		
     if(argc != 3)
     {
         printf("Using:\n\t%s <port> <filter-list>\n", argv[0]);
         return -1;
     }
 
-    printf("starting...\n");
+    printf("HTTP Proxy Server now listening on port %i ... \n", atoi(argv[1]));
     
     //Add filter list to the url_blacklist array.
-    FILE *file;
-    char buf[100];
     char *fileName = argv[2];
-    file =fopen(fileName,"r");
-    if (!file) {
+    filterFile =fopen(fileName,"r");
+    if (!filterFile) {
         printf("Failed to load the filter list, Proxy terminates \n");
         return 0;
     }
     
-    while (fgets(buf,100, file)!=NULL){
+    while (fgets(buf,100, filterFile)!=NULL){
         strtok(buf, "\n");
         url_blacklist[url_index] = (char*) malloc(100);
         strcpy(url_blacklist[url_index], buf);
         url_index += 1;
     }
-    
-    url_blacklist_len = url_index + 1;
-    fclose(file);
+   
+    url_blacklist_len = url_index;
+    fclose(filterFile);
     // Done for adding filter list
 
     // checking if the cache directory exists
@@ -83,7 +82,7 @@ int main(int argc, char **argv)
         perror("failed to bind socket");
     }
 
-    // start listening - w/ backlog = 50
+    // start listening
     listen(sockfd, 50);
 
 accepting:
@@ -129,8 +128,7 @@ accepting:
         }
         
         // Only GET requests are accepted
-        // also some browsers send non-http requests -- this filters them out!
-        if((strncmp(type , "GET", 3) != 0) || ((strncmp(proto, "HTTP/1.1", 8) != 0) && (strncmp(proto, "HTTP/1.0", 8) != 0)))
+        if((strncmp(type , "GET", 3) != 0) || ((strncmp(proto, "HTTP/1.1", 8) != 0)))
         {
             // invalid request -- send the following line back to browser
             sprintf(buffer,"405 : BAD REQUEST\nONLY GET REQUESTS ARE ALLOWED");
@@ -146,9 +144,11 @@ accepting:
         // BLACK LIST CHECK
         for(i = 0; i < url_blacklist_len; i++)
         {
+            //printf("url_blacklist[%i]: %s \n", i, url_blacklist[i]);
             // if url contains the black-listed word
             if(NULL != strstr(url, url_blacklist[i]))
             {
+                
                 sprintf(buffer,"403 : BAD REQUEST\nURL FOUND IN BLACKLIST\n%s", url_blacklist[i]);
                 send(newsockfd, buffer, strlen(buffer), 0);
                 goto end;
@@ -211,7 +211,6 @@ accepting:
             sprintf(buffer,"GET %s HTTP/1.1\r\nHost: %s\r\nIf-Modified-Since: %s\r\nConnection: close\r\n\r\n", url_path, url_host, datetime);
 
         } else {
-            // generally all http responses have Date filed, but just in case!
             sprintf(buffer,"GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", url_path, url_host);
         }
 

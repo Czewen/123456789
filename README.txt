@@ -15,3 +15,7 @@ http://localhost:9001/http://www.facebook.com                        (Refused)
 
 Still need to know the format of the filter file in order to read and import.
 Multi-thread need to be implemented.
+
+GET http://www.renren.com HTTP/1.1
+GET http://www.google.com HTTP/1.1
+GET http://www.yahoo.ca HTTP/1.1
