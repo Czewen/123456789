@@ -14,17 +14,13 @@
 #include "proxyFilter.h"
 
 // comment this to hide extra debugging info
-#define DEBUG
+//#define DEBUG
 
 // list of black-listed websites
-// each url in which any of these words occure, will be blocked
-char *url_blacklist[] = {"facebook.com", "hulu.com", "netflix.com"};
-int url_blacklist_len = 3;
+char *url_blacklist[999];
+int url_blacklist_len = 0;
+int url_index = 0;
 
-// list of black-listed words for content filtering
-// any content in which any of these words occure, will be blocked
-char *word_blacklist[] = {"Arse", "fixer", "algorithms"};
-int word_blacklist_len = 3;
 
 int main(int argc, char **argv)
 {
@@ -36,13 +32,36 @@ int main(int argc, char **argv)
     struct stat st = {0};
 
     // the first argument shows the port-no to listen on
-    if(argc != 2)
+    if(argc != 3)
     {
-        printf("Using:\n\t%s <port>\n", argv[0]);
+        printf("Using:\n\t%s <port> <filter-list>\n", argv[0]);
         return -1;
     }
 
     printf("starting...\n");
+    
+    //Add filter list to the url_blacklist array.
+    FILE *file;
+    char buf[100];
+    char *fileName = argv[2];
+    file =fopen(fileName,"r");
+    if (!file) {
+        printf("Failed to load the filter list, Proxy terminates \n");
+        return 0;
+    }
+    
+    while (fgets(buf,100, file)!=NULL){
+        strtok(buf, "\n");
+        url_blacklist[url_index] = (char*) malloc(100);
+        strcpy(url_blacklist[url_index], buf);
+        //printf("Item in blacklist: %s \n", url_blacklist[url_index]);
+        //printf("Value: %s Index: %i \n", buf, url_index);
+        url_index += 1;
+    }
+    
+    url_blacklist_len = url_index + 1;
+    fclose(file);
+    // Done for adding filter list
 
     // checking if the cache directory exists
     if (stat("./cache/", &st) == -1) {
@@ -346,37 +365,6 @@ do_cache:
                         goto from_cache;
                     }
                 }
-
-                // if we are here, it means we need to cache the response
-                // and save it in a files
-
-                // FILTER CONTENTS
-                // as we recieve the response, check if it has any black-listed
-                // word or not
-                // for each swear word
-                for(i = 0; i < word_blacklist_len; i++)
-                {
-                    // if the swear word occurs in the content
-                    if(NULL != strstr(buffer, word_blacklist[i]))
-                    {
-#ifdef DEBUG
-                        printf("\t-> content in blacklist: %s\n", word_blacklist[i]);
-#endif
-
-                        close(cfd);
-
-                        // remove the cache file
-                        sprintf(filepath, "./cache/%s", url_encoded);
-                        remove(filepath);
-
-                        // tell the browser why we are not providing the content
-                        sprintf(buffer,"400 : BAD REQUEST\nCONTENT FOUND IN BLACKLIST\n%s", word_blacklist[i]);
-                        send(newsockfd, buffer, strlen(buffer), 0);     // send to browser
-                        goto end;
-                    }
-                }
-
-                // we are golden! no profanity!
 
                 // write to file
                 write(cfd, buffer, n);
