@@ -10,11 +10,11 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+#include "Thread.h"
 #include "proxyFilter.h"
 
 // list of black-listed websites
-char *url_blacklist[999];
+char *url_blacklist[100];
 int url_blacklist_len = 0;
 int url_index = 0;
 
