@@ -15,6 +15,3 @@ http://localhost:9001/http://www.facebook.com                        (Refused)
 GET http://www.renren.com HTTP/1.1
 GET http://www.google.com HTTP/1.1
 GET http://www.yahoo.ca HTTP/1.1
-
-
-Multi-thread need to be implemented.
