@@ -1,0 +1,423 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!-- saved from url=(0058)http://www.ugrad.cs.ubc.ca/~cs317/X/Assignments/a3/a3.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+    
+    <title>CS 317 Assignment 3</title>
+    <link rel="stylesheet" href="./CS 317 Assignment 3_files/assignment.css" type="text/css" title="CS416 Assignment Style">
+ <script type="text/javascript" src="./CS 317 Assignment 3_files/external.js"> 
+ </script>
+  </head>
+
+  <body>
+    <h1>Introduction to Socket Programming: A Simple Web Proxy Filter</h1>
+
+<!--
+    <h2>Important Revision History Notes:</h2>
+    
+    <ul>
+      <li>Removed the requirement for the proxyFilter to also be a
+        web server.
+        <li>Changed the requirement that the response to an inappropriate URL
+          or content is to be 403 instead of 301.
+       <li>All response data is to be filtered, regardless of type.
+    </ul>
+-->
+<!-- ==================================================== -->
+        <script type="text/javascript"> 
+          <!--
+                lastModified();
+          // -->
+        </script><p>Page updated 2014.11.08 -  22:35</p>
+<!-- ==================================================== -->
+
+
+Note: You may work in pairs or alone. However, you are strongly encouraged to
+work with a partner. We will again be using Stash and partner signup is the
+same as in A2 and A1. If you are working alone, which is discouraged, you still
+need to signup. The signup instructions for working alone are given as a
+comment to the partner signup URL on Connect. Upon signup, we will populate your repo with a
+working makefile and a simple main program. Only signup alone if you 
+really plan on doing the assignment yourself as you will not be able to 
+pair up with someone later. In particular do not  signup alone simply to see
+the provided code as it is only a few lines long and is basically a "Hello
+World" program to give you and the makefile a starting point. 
+
+    
+    <div class="due">
+      <h2>Due Dates</h2>
+      Monday November 24th 10:00 PM. No late assignments will be accepted due
+      to the need to get this marked as soon as possible because of 317's early
+        exam date.  
+     </div>
+    <div class="goals">
+      <h2>Goals</h2>
+      <ul>
+	<li>To become familiar with an application level protocol, in
+         this case HTTP</li>
+	<li>To learn how to program with sockets in C</li>
+    <li>To become familiar with writing the server side of a client/server system      </li></ul>
+    </div>
+
+    <div class="Requirements">
+      <h2>Basic Assignment Requirements</h2>
+      <ul>
+        <li>For consistency across the assignments, this program must be
+          written in C. (C++ is not acceptable)
+        </li><li>The program must include a working makefile
+            that will compile and link the application.
+        </li><li><b>The program must run on the Undergraduate Linux machines</b>
+            maintained by the department.
+        </li><li>If the program does not compile and link to produce an 
+            executable file, a mark of 0 (zero) will be awarded. (Note, this is
+          not the same as saying the program has to work.) Consequently it is
+          important to implement this assignment incrementally by slowly 
+          building on pieces of code that you already have working. <b>DO NOT TRY
+          TO WRITE THE ASSIGNMENT ALL AT ONCE!</b>
+        </li></ul>
+
+
+      </div>
+
+
+    <h2>Assignment Overview</h2>
+
+    <p>
+      In this assignment you will  initially use the Unix socket API to construction a
+      web proxy server. You will then extend the proxy server  
+      to block websites. For example, the server, through a provided file, 
+      might be configured to block any host name that the substrings <b>SFU</b>, <b>Toronto</b>,
+      or <b>uvic.ca</b>.
+
+
+
+      </p><p>
+      Your program is to take two arguments. The first is the TCP port the program 
+      will be listening on for HTTP connections. The second argument is
+      the name of a local file containing the substrings identifying host names
+      or parts of host names that content is <b>not</b> be retrieved from.  In
+      the first part of the assignment the second argument can be ignored.
+
+<!--
+      Each string in the filter file is to be on a line by itself. For simplicity, the substrings
+      must match exactly, except for case. Again, for simplicity, you only have to use
+      the first 20 lines of the file and you can assume no line is longer than 64 characters. Suppose that the file 
+      contained, on separate lines, SFU and Toronto then the following would be
+      considered matches:
+      <ul>
+        <li>In basketball the UBC Thunderbirds beat Toronto like a rented mule.
+        <li>www.sfu.ca
+        <li>TorontoBlueJays
+        <li>most torontonians 
+      </ul>
+-->
+
+
+      </p><p>Once completed the program will, roughly, do the following:
+        </p><ol>
+          <li>Listens for connections
+          </li><li>Accepts a connection from the client.
+          </li><li>Checks the host the URI is to be retrieved from to determine it
+            is banned (blacklisted). 
+          </li><li>Checks to see if the URL being requested is cached. If so returns 
+              the cached contents. Otherwise:
+          </li><li>Sets up a connection to the 
+            machine identified by the HOST: part of the HTTP request and
+            forwards the request and all other data to the host.
+           </li><li>Accepts the response data from the server and forwards it to the 
+              client and stores it in a cache file. 
+            </li><li>Closes the connection and goes back to listening.
+          </li></ol>
+
+<p>You are only to cache successfully retrieved data. (e.g. if you get a 404
+  don't cache that.) You can also ignore any directives in the response that
+  pertain to caching. This means that this proxy server will only work properly
+  for plain pages that don't have dynamic content or constraints on how long a
+  page can be cached. 
+
+</p><p>
+  Your server is to be based on the HTTP/1.1 specification, available
+    at: <a href="http://www.w3.org/Protocols/rfc2616/rfc2616.html">
+    http://www.w3.org/Protocols/rfc2616/rfc2616.html</a>. (You can ignore the
+  red warning banner.) You are only
+    required to implement enough of the protocol to get this assignment working. 
+    Essentially that means you need to handle the GET request and the <b>host:</b>
+  header field. Since the request is not destined for your proxyServer
+  (i.e., your proxyServer  isn't
+  responsible for the original content) the full request needs to be
+  transparently passed to the target server. Many browsers will request a
+  persistent connection, you don't have to honour that. 
+
+</p><p>    To develop a better
+    understanding of the problems and how to interpret the HTTP protocol you
+should read 2.2 of the text paying particular attention to sections 2.2.1, 2.2.3,
+2.2.5, and 2.2.6.
+
+
+
+</p><p>The following sections outline the order you are to implement the assignment.
+ Do not proceed to the next part of the assignment until you get the
+  current part working. In particular note that if you don't have part "N"
+  working you will not get any marks for part "N+1".
+
+
+
+   </p><h2>Part 1: The Simple Proxy Server</h2>
+
+The goal of the first part of the assignment is to:
+<ul>
+<li>
+  Accept a connection request from a client
+</li><li>Parse the request looking for the GET and HOST headers respectively and to
+  print the URL to be retrieved and the HOST to contact. If the type of the
+  request is not GET your proxy is to return a 405 and indicate that the only 
+  method allowed is a GET.
+</li><li>To connect to the HOST and forward the HTTP request to that host. Make sure
+  to deal with the situation when a host is not reachable or refuses a
+  connection. (Checkout the 5xx codes.) 
+</li><li>Assuming the  connection is accepted, read and print the HTTP reply code
+  before or while sending the response back to the client.
+</li><li>Once you have read the all of the response data close the connections to
+  both the client and the HTTP server. To do this properly you may have to
+  handle  the content-length (14.13) field or responses that 
+  have a chunked encoding transfer type (3.6). 
+</li><li>Go back and wait for another connection.
+</li></ul>
+
+<p> Some suggestions for testing your proxy server:
+</p><ul>
+ <li>Pick a web site that has very simple content to return. 
+ <a href="http://www.cs.ubc.ca/~acton/lawler.txt">http://www.cs.ubc.ca/~acton/lawler.txt</a>
+          is an example of one file that you should be able to retrieve, but 
+   make sure you try other sites. 
+ </li><li>Make sure you understand the format of an HTTP is like and then you can
+   use telnet or nc commands on the department Linux machines to manually 
+   connect to your proxy server and then manually enter the HTTP request. 
+</li></ul>
+
+<h2>Part 2: Filtering Hosts</h2>
+<p>One of the key tasks of your server is to block sites that appear in the
+  filter file (blacklist). Each line in the filter file contains a string that 
+is to be looked for in the host the URI is to be retrieved from. If the string
+  appears anywhere in the host name then the request is not to be forwarded and
+  the proxy server is to return a 403 to client and then close the connection. 
+
+</p><p>You may assume that the file contains no more than 100 entries and that no
+  entry is more than 100 characters long. When matching the strings in the file
+  against the host name, case is to be ignored and the strings are considered to
+  match if the string in the file appears anywhere in the host name. Typical
+  pattern matching characters like "*" have not special meaning.
+
+
+   </p><h2>Part 3: Proxy server that handles multiple clients at the same time</h2>
+
+<p>A proxy server that handles only one connection at a time 
+ can be quite the bottleneck so your next task is to make your server
+  multi-threaded. The biggest challenge in doing this will be figuring out how
+  to use POSIX threads. The actual code in the thread is a relatively
+  straight forward adaptation of of what you did in the previous section. Basically
+  you will have the main body of code create the socket, do the bind, and the
+  listen. The main body will then create a number of worker threads to handle 
+the requests. The created threads will need the file descriptor to 
+accept on. DO NOT USE A GLOBAL VARIABLE. For this assignment creating 4 threads will be sufficient. Once
+  the worker threads have started the main thread has done all it needs to
+  do. If you don't wait properly the main program can exit and take all the
+  threads with it. You may to do a long sleep in a loop. 
+
+</p><p>The body of the thread will contain or call  code to do the accept, parse
+  the request, connect to the HTTP server, forward the request, and process the
+  response. 
+
+</p><p>As in part 1,  testing may be a challenge since you will want to slow things down a
+  bit to have multiple requests being processed. Again doing things through
+  telnet or with nc will be helpful.  At this point you might also want to configure a
+  browser to use your server as a proxy. 
+
+
+
+</p><h2>Part 4: Caching</h2>
+<p>The real benefit of proxy server comes when it can return content that is has
+  cached. For this assignment the caching rules are relatively simple. Any GET
+  that returns a valid response is to be cached. You are to ignore any of the
+  response fields that dictate whether or not content can be cached and for how
+  long. Once a URI is cached, all subsequent requests to retrieve that URI are
+  to return the cached contents. To keep things simple, one URI is considered to match another
+  URI only if it matches exactly. 
+
+</p><p>There are two big challenges with respect to caching:
+</p><ol>
+<li>How to locate the file containing the contents to be returned. You can't
+  simply use the URI as the name of the file because URIs can contain "/" which
+  has a special meaning in the Unix file system. There are a number of
+  strategies you could employ such as using some sort of hash function on the
+  name to produce a string to use as the name of the cache file. If you use
+  this approach make sure you have a strategy for dealing with hash
+  collisions. Another approach is to take the URI and convert it to an ASCII
+  hex encoding of the file name which effectively gets rid of the special
+  characters. Also keep in mind that a file name is restricted to a maximum of
+  255 characters in length (i.e. within a directory no file can have more than
+  255 characters) but a URI, or the converted representation of the URI could
+  easily exceed this value so you will probably want to use some sort of radix
+  based directory structure to store the files.
+</li><li>Concurrent fetches of the same URI. Special care needs to be taken when a
+  request comes in for a URI when a request to retrieve that URI is in
+  progress. Since the first fetch of the URI is in progress the contents of the
+  cache file are incomplete and cannot be returned. A simple way to deal with
+  this is to use a temporary name for the file being fetched and then changing
+  the name to the final name once the response has been fully received. If two
+  clients request the same URI at the same time this will result in two fetches
+  and two renames with the contents of the last rename replacing the older
+  file.  
+</li></ol>
+
+<p>The Linux system call to rename a file is rename() (see man 2 rename). You
+  are to store the cache files starting in a directory named cache. (You can
+  have directories in the cache directory.) You are not to add the cache
+  directory to your repo. If you commit any files in the cache directory you
+  will be penalized 5 percent. If for some reason a cache file cannot be
+  created, or a write to the file fails then the cache file is to be deleted,
+  but the response from the server is still to be forwarded to the client. 
+ 
+    </p><h2>Some Implementation Constraints, Suggestions and Reminders</h2>
+
+    Your program must be named proxyFilter and take two arguments, the port the program will be
+    listening on for HTTP requests and the name of the file storing the
+    "inappropriate" strings to look for.  The program must not expect any input
+    from standard
+    input (i.e., typically the keyboard). There is no constraint related to the standard output, and
+    it may be used as you wish, but you are warned to be careful if you print
+    the 
+    response body as it may contain binary data.
+
+ <p>
+    You are strongly advised to read section 4 of the RFC carefully,
+    especially Section 4.4. You are required to handle the following
+    types of message body length declarations: response codes that do
+    not require bodies (e.g., 1xx or 304), chunked encoding, and 
+    Content-Length header. As most of the web pages use the
+    Content-Length header, it is  suggested  that you implement it first,
+    followed by chunked encoding.
+
+</p><p>    Keep in mind that for both the HTTP requests and responses that there is no
+    constraint on how these messages get divided into the underlying network packets. A
+    consequence of this is that you cannot assume that a single call to <em>
+    recv()</em> will contain the complete response or request. The request or
+    response data could span one or more <em> recv()</em> calls. You must take
+    this behaviour into account when receiving a message. Although not as
+    likely, it is also possible that a call to <em>send()</em> will not send
+    the entire amount of data that the caller requested. Your code must be
+    prepared for such behaviour and handle things appropriately. 
+
+    
+    
+</p><p>
+   </p><p> Although Linux and many other operating systems support IPv6 you are not
+    required to deal with IPv6. Your program only needs to work in the standard 
+    IPv4 environment. In addition you do not have to support HTTPS. 
+
+
+
+ </p><p>
+    You are not required to implement persistent HTTP connections, but
+    keep in mind that the browser or the host may try to keep the
+    connection alive. Consequently, you are not to expect a connection "EOF"
+    to signal the end of a response. Conversely, you must 
+    deal with unexpected connection interruptions which may not
+    indicate the end of a response, but an error in the communication. If
+    the web server closes the connection unexpectedly, you are
+    required to send an appropriate response to the requestor,
+    indicating that the request could not be correctly completed and 
+    any data you might be writing to the cache file is to be deleted. Should 
+    the requestor (client) close the connection unexpectedly, you are required
+    to close all associated connections appropriately. 
+    
+    </p><p>
+    Remember that a single request or response may require more than
+    one TCP packet, so a simple <em>recv</em> command might not be
+    sufficient to receive the entire request or response. Read the
+    HTTP RFC or the appropriate chapters in the textbook to understand
+    how to identify the end of the HTTP request or response. Also
+    remember that a response may contain binary information, so a
+    null byte does not necessarily represent the end of the response
+    (i.e., do not use string functions
+    like <em>strlen</em>, <em>strcpy</em> or <em>strcat</em> to deal
+with any processing associated with determining the end of the HTTP response message body.)
+
+
+    </p><p>Please keep in mind that what needs to be done is not terribly
+    complicated if you approach it correctly. However, working with C and 
+   strings in C can present its own set of problems but
+      oftentimes, the simplest implementations and approaches are the best, so 
+   don't make things complicated.
+
+    </p><h2>What to Hand In</h2>
+
+<ul>
+      <li>All of the .c and .h files required to build proxyFilter.</li>
+      <li>A makefile such that when the TA types <em>make</em> proxyFilter is built. The program must end
+	up in the same directory where the makefile is (i.e., the home directory
+	of your assignment.) Note, this does not have to be a complicated
+	makefile and it is acceptable for the makefile to always rebuild the
+	program regardless of whether or not they are out-of-date with respect
+	to their source files. The provided makefile should only need minor
+        modifications
+   as you add additional .c or .h files</li>
+      <li>Remember you hand in your assignment by committing the files and then
+        pushing them to the stash server.
+</li></ul>
+
+    <h2>Grading Scheme</h2>
+    Each portion will be graded taking the following into account:
+    <p> Correctness</p>
+        <ul>
+          <li>Note that having a "working" assignment is not sufficient to
+            guarantee full marks. To receive full marks the code must be
+            reasonably structured, properly commented and use approaches and
+            strategies that are appropriate to the problem being solved. Keep
+            in mind that there are lots of ways to build a "bad" working
+            program.
+          </li></ul>
+
+    <p>tyle and comments</p>
+
+   <p>Grades will be apportioned roughly (i.e. things may not be exactly like
+     this but it should be close) as follows:
+</p><ol>
+<li> 30% simple proxy server part
+</li><li> 10% filtering part
+</li><li> 25% multiple client support part
+</li><li> 25% caching part
+</li><li> miscelaneous things like comments, structure etc.
+</li></ol>
+
+
+
+    <p>YOUR CODE IS TO BE DEVELOPED FOR, AND RUN ON, THE UNDERGRADUATE Linux MACHINES.
+
+      </p><p>Although it is possible to complete this assignment on a MAC or
+        Windows machine you are strongly discouraged from doing so. There are significant differences in how
+        to compile, link, and use sockets and threads  in these other environments that can
+        make porting the resulting code to Linux particularly challenging and
+        this might prevent you from being able to hand in a program that compiles,
+        links, and produces an executable program, (which must happen if you want your
+        assignment graded), let alone work.
+
+    </p><h2>Time to Complete</h2>
+  This assignment will take time not only to code, but to
+    understand the HTTP specification and socket functionality. You
+    are strongly advised to start implementing the assignment as early
+    as possible. As a general rule, if you are stuck on the same
+    problem for more than one or two hours, you should 
+    seek help or guidance on how to proceed.
+
+
+<h2>Additional Resources</h2>
+<ul>
+  <li><a href="http://beej.us/guide/bgnet">Beej's Guide to Network Programming</a>  
+   </li><li><a href="http://www.jmarshall.com/easy/http/">HTTP Made Real Easy</a>
+</li></ul> 
+
+
+    <p><a href="http://validator.w3.org/check/referer"><img src="./CS 317 Assignment 3_files/valid-html401" alt="Valid HTML 4.01!" height="31" width="88"></a></p>
+  
+
+</body></html>

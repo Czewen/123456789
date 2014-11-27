@@ -10,7 +10,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "Thread.h"
 #include "proxyFilter.h"
 
 // list of black-listed websites

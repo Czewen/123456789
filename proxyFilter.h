@@ -33,7 +33,6 @@ void parse_url(char *url, char *hostname, int *port, char *path)
 	char *ppath = &(nurl[0]);
 	
 	// check if the address starts with http://
-	// e.g. somehost.com/index.php vs. http://somehost.com/index.php
 	if(NULL != strstr(ppath, "http://"))
 	{
 		ppath = &(nurl[6]);
@@ -45,7 +44,6 @@ void parse_url(char *url, char *hostname, int *port, char *path)
 	sprintf(nhostname, "%s", tok_str_ptr);
 	
 	// check if the hostname also comes with a port no or not
-	// e.g. somehost.com:8080/index.php
 	if(NULL != strstr(nhostname, ":"))
 	{
 		tok_str_ptr = strtok(nhostname, ":");
@@ -58,7 +56,6 @@ void parse_url(char *url, char *hostname, int *port, char *path)
 	}
 	
 	// the rest of the url gives us the path
-	// e.g. /index.php in somehost.com/index.php
 	ppath = &(url[strlen(hostname) + offset]);
 	sprintf(path, "%s", ppath);
 	if(strcmp(path, "") == 0)
