@@ -2,7 +2,7 @@ CPSC 317 Assignment 3: HTTP Proxy Server
 ========
 > A simple http proxy server with fitering
 
-[Assignment Description](/description/CS317A3)
+[Assignment Description](/description/CS317A3.html)
 
 How to run it:
 
