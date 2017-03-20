@@ -1,6 +1,6 @@
 CPSC 317 A3: HTTP Proxy Server
 ========
-###UBC CPSC 317 Internet Computing
+<h3>UBC CPSC 317 Internet Computing</h3>
 > A simple http proxy server with fitering
 
 [Assignment Description](/description/CS317A3.html)
